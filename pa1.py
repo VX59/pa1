@@ -1,6 +1,14 @@
 # CH 2.5 Algorithm Design
+# I found that only considering the weight or the revenue of each client will not give an optimal solution
+# when we take the ratio renvenue/bandwidth we can see that this may produce a better result and it does compared
+# to the other possible solutions I've tried
+# it forces the heap to prioritize clients with the most $/gb essentially with sounds like a natural optimal solution
+# that is the greedy rule this algorithm follows
+
 class Request:
+    id = 0
     def __init__(self, revenue, bandwidth):
+
         self.r = revenue
         self.b = bandwidth
         self.weight = float(self.r/self.b)
@@ -64,11 +72,13 @@ potential_clients = int(contents[1])
 
 requests = contents[2:potential_clients+2]
 request_objs = [Request(int(r.split(",")[0]), int(r.split(",")[1])) for r in requests]
+for i in range(len(request_objs)):
+    request_objs[i].id = i
 
 pqueue = Heap(potential_clients)
 
-[pqueue.insert(r) for r in request_objs]
-sorted = [pqueue.remove(0) for r in range(potential_clients)]
+[pqueue.insert(r) for r in request_objs]    # O(nlog(n))
+sorted = [pqueue.remove(0) for r in range(potential_clients)] # O(nlog(n))
 
 def compute_net_profit(units_available, request:Request):
     p = request.r
@@ -80,30 +90,32 @@ def pull_clients(sorted_list):      # O(n)
     clients = []
     for node in sorted_list:
         if(used_bandwidth + node.b <= bandwidth_capacity): 
-            clients.append((node.b,node.r))
+            clients.append(node)
             used_bandwidth += node.b
             revenue += node.r
             
-    print(used_bandwidth, revenue,"\n")
-    # can we or should we sublease
+    #print(used_bandwidth, revenue,"\n")
+
     remaining = bandwidth_capacity - used_bandwidth
     sublease_options = []
 
     for node in sorted_list:
-        if(not clients.__contains__((node.b,node.r))):
+        if(not clients.__contains__(node)):
             sublease_options.append(compute_net_profit(remaining, node))
-
-    [print(s[0].r,s[0].b,s[1]) for s in sublease_options]
 
     m = 0
     mnode = None
-    for s in sublease_options:
+    for s in sublease_options:  # which sublease option makes the most money
         if s[1] > m: m = s[1]; mnode = s
     
-    if(m > 0):
+    if(m > 0):  # we choose to sublease
+        print("1\n"+"("+str(mnode[0].id),str(mnode[0].b-remaining)+")")
         used_bandwidth += remaining
         revenue += m
-
-    print(used_bandwidth, revenue)
+    
+    [print(c.id) for c in clients]
+    #print(used_bandwidth, revenue)
 
 pull_clients(sorted)
+
+# the upper bound is O(nlog(n))
